@@ -504,6 +504,7 @@ interface AgentSession {
   tryHandleOutOfBand?(prompt: AgentPromptInput): {
     run(ctx: { emit: (event: AgentStreamEvent) => void }): Promise<void>;
   } | null;
+  readonly promptCache?: PromptCacheControl; // see agent-lifecycle.md#prompt-cache-keep-warm
 }
 ```
 

@@ -661,8 +661,26 @@ export interface AgentUsageSession {
   sessionKey: string;
 }
 
+/** Prompt cache of the provider's main conversation, as observed on its live runtime. */
+export interface PromptCacheState {
+  /** Start of the latest request that read or wrote the cached conversation. */
+  touchedAt: Date;
+  /** How long the provider keeps the entry after `touchedAt`. */
+  ttlMs: number;
+}
+
+/** Keeps a provider's prompt cache alive while its agent waits for the user. */
+export interface PromptCacheControl {
+  /** Null until this runtime has sent a request whose cache lifetime is known. */
+  state(): PromptCacheState | null;
+  /** Re-read the cached conversation without adding to it. Rejects when nothing was read. */
+  refresh(): Promise<void>;
+}
+
 export interface AgentSession {
   usageSession?(): AgentUsageSession | null;
+  /** See docs/agent-lifecycle.md#prompt-cache-keep-warm. */
+  readonly promptCache?: PromptCacheControl;
   readonly provider: AgentProvider;
   readonly id: string | null;
   readonly capabilities: AgentCapabilityFlags;

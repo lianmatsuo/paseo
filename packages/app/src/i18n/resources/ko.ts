@@ -2549,6 +2549,12 @@ export const ko: TranslationResources = {
       },
       agents: {
         unavailable: "에이전트를 관리하려면 이 호스트에 연결하세요",
+        keepPromptCacheWarm: {
+          title: "프롬프트 캐시 유지",
+          hint: "유휴 상태인 Claude 에이전트의 1시간 프롬프트 캐시를 최대 4시간 동안 갱신하여, 다음 메시지가 대화를 다시 캐시하는 비용 없이 캐시를 재사용하도록 합니다. 갱신할 때마다 캐시 읽기 비용이 발생합니다.",
+          accessibilityLabel: "프롬프트 캐시 유지",
+          updating: "프롬프트 캐시 설정 업데이트 중…",
+        },
       },
       workspaces: {
         unavailable: "워크스페이스를 관리하려면 이 호스트에 연결하세요",

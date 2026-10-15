@@ -2510,6 +2510,12 @@ export const zhCN: TranslationResources = {
       },
       agents: {
         unavailable: "连接到这个 Host 以管理 Agent",
+        keepPromptCacheWarm: {
+          title: "保持提示缓存有效",
+          hint: "在空闲的 Claude Agent 等待期间，最多 4 小时内刷新其一小时的提示缓存，让你的下一条消息直接复用缓存，而无需为重新缓存整个对话付费。每次刷新会产生一次缓存读取费用。",
+          accessibilityLabel: "保持提示缓存有效",
+          updating: "正在更新提示缓存设置…",
+        },
       },
       workspaces: {
         unavailable: "连接到这个 Host 以管理 Workspace",

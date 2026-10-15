@@ -796,6 +796,24 @@ describe("DaemonConfigStore", () => {
     expect(persisted.daemon?.enableTerminalAgentHooks).toBe(true);
   });
 
+  test("patch persists keep prompt cache warm into config.json", () => {
+    const paseoHome = mkdtempSync(path.join(tmpdir(), "paseo-daemon-config-store-"));
+    tempDirs.push(paseoHome);
+    const store = new DaemonConfigStore(paseoHome, {
+      mcp: { injectIntoAgents: false },
+      providers: {},
+      metadataGeneration: { providers: [] },
+      autoArchiveAfterMerge: false,
+      enableTerminalAgentHooks: false,
+      appendSystemPrompt: "",
+    });
+
+    store.patch({ keepPromptCacheWarm: true });
+
+    expect(store.get().keepPromptCacheWarm).toBe(true);
+    expect(loadPersistedConfig(paseoHome).daemon?.keepPromptCacheWarm).toBe(true);
+  });
+
   test("patch persists metadata generation providers into config.json", () => {
     const paseoHome = mkdtempSync(path.join(tmpdir(), "paseo-daemon-config-store-"));
     tempDirs.push(paseoHome);

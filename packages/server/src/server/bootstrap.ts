@@ -165,6 +165,7 @@ import {
   type ActiveWorkspaceRef,
 } from "./workspace-archive-service.js";
 import { setupAutoArchiveOnMerge } from "./auto-archive-on-merge/index.js";
+import { setupPromptCacheKeepWarm } from "./prompt-cache-keep-warm/index.js";
 import { wrapSessionMessage, type SessionOutboundMessage } from "./messages.js";
 import type { TerminalManager } from "../terminal/terminal-manager.js";
 import { createConfiguredTerminalManager } from "../terminal/terminal-manager-factory.js";
@@ -407,6 +408,7 @@ export interface PaseoDaemonConfig {
   };
   autoArchiveAfterMerge?: boolean;
   enableTerminalAgentHooks?: boolean;
+  keepPromptCacheWarm?: boolean;
   appendSystemPrompt?: string;
   terminalProfiles?: TerminalProfile[];
   agentProfiles?: AgentProfile[];
@@ -561,6 +563,7 @@ function createInitialMutableDaemonConfig(config: PaseoDaemonConfig): MutableDae
     },
     autoArchiveAfterMerge: config.autoArchiveAfterMerge ?? false,
     enableTerminalAgentHooks: config.enableTerminalAgentHooks ?? false,
+    keepPromptCacheWarm: config.keepPromptCacheWarm,
     appendSystemPrompt: config.appendSystemPrompt ?? "",
     pluginsEnabled: config.pluginsEnabled ?? false,
     plugins: config.plugins ?? {},
@@ -1136,6 +1139,12 @@ export async function createPaseoDaemon(
     markWorkspaceArchiving: markWorkspaceArchivingExternal,
     clearWorkspaceArchiving: clearWorkspaceArchivingExternal,
     emitWorkspaceUpdatesForWorkspaceIds: emitWorkspaceUpdatesExternal,
+  });
+
+  const disposePromptCacheKeepWarm = setupPromptCacheKeepWarm({
+    agentManager,
+    daemonConfigStore,
+    logger,
   });
 
   const createPaseoWorktreeForTools = async (
@@ -1820,6 +1829,7 @@ export async function createPaseoDaemon(
     await hubRelationships.stop();
     workspaceReconciliation.dispose();
     scriptHealthMonitor.stop();
+    disposePromptCacheKeepWarm();
     // Freeze both ingress and registration before taking the agent closure snapshot.
     wsServer?.prepareForShutdown();
     agentManager.prepareForShutdown();

@@ -2538,6 +2538,12 @@ export const ar: TranslationResources = {
       },
       agents: {
         unavailable: "Connect to this host to manage agents",
+        keepPromptCacheWarm: {
+          title: "إبقاء ذاكرة التخزين المؤقت للمطالبات نشطة",
+          hint: "يحدّث ذاكرة التخزين المؤقت للمطالبات ذات الساعة الواحدة لوكلاء Claude الخاملين لمدة تصل إلى 4 ساعات، حتى تعيد رسالتك التالية استخدامها بدلًا من دفع تكلفة تخزين المحادثة مؤقتًا من جديد. كل تحديث يكلّف قراءة واحدة من ذاكرة التخزين المؤقت.",
+          accessibilityLabel: "إبقاء ذاكرة التخزين المؤقت للمطالبات نشطة",
+          updating: "جارٍ تحديث إعداد ذاكرة التخزين المؤقت للمطالبات…",
+        },
       },
       workspaces: {
         unavailable: "Connect to this host to manage workspaces",

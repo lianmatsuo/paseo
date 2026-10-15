@@ -2665,6 +2665,12 @@ export const en = {
       },
       agents: {
         unavailable: "Connect to this host to manage agents",
+        keepPromptCacheWarm: {
+          title: "Keep prompt cache warm",
+          hint: "Refresh idle Claude agents' hour-long prompt cache for up to 4 hours, so your next message reuses it instead of paying to cache the conversation again. Each refresh costs a cache read.",
+          accessibilityLabel: "Keep prompt cache warm",
+          updating: "Updating prompt cache setting…",
+        },
       },
       workspaces: {
         unavailable: "Connect to this host to manage workspaces",

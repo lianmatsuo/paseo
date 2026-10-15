@@ -2576,6 +2576,12 @@ export const ptBR: TranslationResources = {
       },
       agents: {
         unavailable: "Conecte-se a este host para gerenciar agentes",
+        keepPromptCacheWarm: {
+          title: "Manter o cache de prompts ativo",
+          hint: "Atualiza o cache de prompts de uma hora dos agentes Claude ociosos por até 4 horas, para que sua próxima mensagem o reutilize em vez de pagar para armazenar a conversa em cache novamente. Cada atualização custa uma leitura de cache.",
+          accessibilityLabel: "Manter o cache de prompts ativo",
+          updating: "Atualizando a configuração do cache de prompts…",
+        },
       },
       workspaces: {
         unavailable: "Conecte-se a este host para gerenciar workspaces",

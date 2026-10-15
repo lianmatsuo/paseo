@@ -204,6 +204,7 @@ snapshot so a mixed edit can apply its live subset and still name the paths that
     mcp: { enabled: boolean, injectIntoAgents: boolean },
     git: { maxProcessesPerSecond: number, maxProcessConcurrency: number },
     appendSystemPrompt: string,    // appended to supported provider system/developer prompts
+    keepPromptCacheWarm: boolean,  // see agent-lifecycle.md#prompt-cache-keep-warm
     terminalProfiles: TerminalProfile[],  // named shell commands; omitted means DEFAULT_TERMINAL_PROFILES
     agentProfiles: AgentProfile[],        // named agent launch bundles; omitted means none
     cors: { allowedOrigins: string[] },

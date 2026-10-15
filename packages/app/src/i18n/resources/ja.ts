@@ -2563,6 +2563,12 @@ export const ja: TranslationResources = {
       },
       agents: {
         unavailable: "エージェントを管理するにはこのホストに接続してください",
+        keepPromptCacheWarm: {
+          title: "プロンプトキャッシュを維持",
+          hint: "待機中の Claude エージェントの 1 時間のプロンプトキャッシュを最大 4 時間更新し、次のメッセージで会話を再キャッシュする費用をかけずに再利用できるようにします。更新ごとにキャッシュ読み取りの費用がかかります。",
+          accessibilityLabel: "プロンプトキャッシュを維持",
+          updating: "プロンプトキャッシュの設定を更新しています…",
+        },
       },
       workspaces: {
         unavailable: "ワークスペースを管理するにはこのホストに接続してください",
