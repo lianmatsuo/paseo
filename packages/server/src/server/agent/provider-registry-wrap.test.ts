@@ -9,6 +9,7 @@ import type {
   SteerActiveTurnOptions,
   SteerResult,
   ImportedTimelineEntry,
+  PromptCacheControl,
 } from "./agent-sdk-types.js";
 import { wrapSessionProvider } from "./provider-registry.js";
 
@@ -68,6 +69,12 @@ class FakeSession implements AgentSession {
   readonly steers: Array<{ prompt: AgentPromptInput; options: SteerActiveTurnOptions }> = [];
   readonly features = [];
   readonly recordedCalls: string[] = [];
+  readonly promptCache: PromptCacheControl = {
+    state: () => null,
+    refresh: async () => {
+      this.recordedCalls.push("promptCache.refresh");
+    },
+  };
 
   async run() {
     this.recordedCalls.push("run");
@@ -224,6 +231,7 @@ describe("wrapSessionProvider", () => {
     expect(wrapped.id).toBe("session-2");
     expect(wrapped.capabilities).toEqual(session.capabilities);
     expect(wrapped.initialTimeline).toEqual(session.initialTimeline);
+    expect(wrapped.promptCache).toBe(session.promptCache);
   });
 
   test("propagates steering failure without interrupting or replacing the turn", async () => {

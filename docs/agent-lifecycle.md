@@ -37,6 +37,47 @@ work is gone. Report that exit as a turn failure so the agent lands in `error` w
 Claude and OMP report exits between turns. OMP relaunches from its session file on the next prompt;
 the unfinished turn is lost.
 
+### Prompt cache keep-warm
+
+A provider's prompt cache expires while an idle agent waits. Claude Code caches the main
+conversation for 1 hour on a subscription and 5 minutes on an API key or cloud provider; the first
+turn after expiry pays to write the whole conversation again. With `daemon.keepPromptCacheWarm` on
+(Host settings → Agents), `packages/server/src/server/prompt-cache-keep-warm/` refreshes the cache
+of idle root agents 5 minutes before it expires, for up to 4 hours after the agent's last turn.
+
+A session opts in through `AgentSession.promptCache`. The refresh has to re-read the exact cached
+prefix without changing the conversation, which rules out the two obvious routes:
+
+- A real turn adds to the transcript, runs the user's hooks, raises attention, and moves `updatedAt`.
+- A forked or resumed process rebuilds its system prompt and tool list. Its prefix misses, pays a
+  full write, and never touches the live entry.
+
+Claude refreshes with a side question (Claude Code's `/btw`) on the live query. Claude Code runs it
+on the main conversation's last request with the cache marker moved back onto that prefix, writes no
+new entry, and keeps it out of the transcript. `askSideQuestion` exists at runtime but not in the
+SDK's public types, and Paseo launches the user's installed `claude`, so an older CLI rejects it and
+warming stops until the agent's next turn.
+
+- Only hour-long caches are warmed. Each request's `cache_creation` reports which lifetime it
+  wrote; hour-long entries must precede 5-minute ones, so any 5-minute write means the conversation
+  tail expires in 5 minutes. A 5-minute cache would need a refresh every few minutes, which costs
+  more than the re-write it saves. API-key users opt in with
+  `CLAUDE_CODE_PROMPT_CACHE_TTL=1h` in the Claude provider's `env`; every cache write then costs 2×
+  base input instead of 1.25×.
+- A refresh on an expired entry pays full input price and does not revive it. The lifetime counts
+  from the start of the request that last used the entry. The warmer never refreshes within a minute
+  of expiry, so after host sleep it stops until the next turn.
+- Subagents, agents waiting on a permission, and closed agents are not warmed. A closed agent has no
+  process, and resuming it rebuilds the system prompt, so it misses anyway.
+- The side question returns no usage. The first real request after a refresh logs
+  `claude.prompt_cache.request_after_refresh` with its cache read and write tokens; a large read
+  means the refresh held. The side question marks its read with Claude Code's 5-minute helper
+  lifetime. That this keeps a 1-hour entry alive is inferred from Claude Code sharing the main cache
+  with its own helpers, not documented, so check that log after a Claude Code upgrade.
+
+Pi warms its own cache (`cacheWarming`), Codex on gpt-5.5+ keeps its cache for 24 hours, and OpenCode
+only writes 5-minute entries, so none of them implement `promptCache`.
+
 ### Cancellation
 
 Provider interruption is idempotent at the `AgentSession` boundary. It resolves when the prior

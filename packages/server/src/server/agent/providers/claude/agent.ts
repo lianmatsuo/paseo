@@ -79,6 +79,11 @@ import { renderPromptAttachmentAsText } from "../../prompt-attachments.js";
 import { discoverClaudeModels } from "./model-discovery.js";
 import { claudeQuery, type ClaudeOptions, type ClaudeQueryFactory } from "./query.js";
 import {
+  askRefreshSideQuestion,
+  ClaudeSideQuestionError,
+  readClaudeRequestStart,
+} from "./prompt-cache.js";
+import {
   realClaudeRewindSdk,
   revertClaudeConversation,
   revertClaudeFiles,
@@ -129,6 +134,8 @@ import {
   type ImportProviderSessionInput,
   type ListImportableSessionsOptions,
   type McpServerConfig,
+  type PromptCacheControl,
+  type PromptCacheState,
   type ProviderCatalog,
   type ProviderRefreshContext,
   type ResolveAgentDefaultModeInput,
@@ -2220,6 +2227,15 @@ class ClaudeAgentSession implements AgentSession {
   private pendingFreshSessionId: string | null = null;
   private recentStderr = "";
   private closed = false;
+  /** Start of the latest main-conversation request this runtime sent; see prompt-cache.ts. */
+  private promptCacheTouchedAt: Date | null = null;
+  private promptCacheTtlMs: number | null = null;
+  /** Set by a refresh so the next real request logs whether the warmed entry was still there. */
+  private promptCacheRefreshedAt: Date | null = null;
+  readonly promptCache: PromptCacheControl = {
+    state: () => this.readPromptCacheState(),
+    refresh: () => this.refreshPromptCache(),
+  };
 
   constructor(config: ClaudeAgentConfig, options: ClaudeAgentSessionOptions) {
     this.config = config;
@@ -3233,6 +3249,44 @@ class ClaudeAgentSession implements AgentSession {
     return { kind: "fresh-session" };
   }
 
+  private readPromptCacheState(): PromptCacheState | null {
+    if (!this.promptCacheTouchedAt || this.promptCacheTtlMs === null) return null;
+    return { touchedAt: this.promptCacheTouchedAt, ttlMs: this.promptCacheTtlMs };
+  }
+
+  /** Only main-conversation frames reach here; subagent requests cache a different prefix. */
+  private observePromptCacheRequest(streamEvent: unknown): void {
+    const requestStart = readClaudeRequestStart(streamEvent);
+    if (!requestStart) return;
+    if (this.promptCacheRefreshedAt) {
+      // The refresh itself reports no usage, so the request after it is the evidence that the
+      // warmed entry survived: a hit reads the conversation, a miss writes it again.
+      this.logger.info(
+        {
+          sinceRefreshMs: Date.now() - this.promptCacheRefreshedAt.getTime(),
+          cacheReadInputTokens: requestStart.cacheReadInputTokens,
+          cacheCreationInputTokens: requestStart.cacheCreationInputTokens,
+        },
+        "claude.prompt_cache.request_after_refresh",
+      );
+      this.promptCacheRefreshedAt = null;
+    }
+    this.promptCacheTouchedAt = new Date();
+    this.promptCacheTtlMs = requestStart.ttlMs ?? this.promptCacheTtlMs;
+  }
+
+  private async refreshPromptCache(): Promise<void> {
+    const query = this.query;
+    if (!query || this.closed) throw new ClaudeSideQuestionError("no-runtime");
+    const startedAt = new Date();
+    await askRefreshSideQuestion(query);
+    // A replacement process caches its own prefix, and a turn that started meanwhile is newer.
+    if (this.query !== query) return;
+    if (this.promptCacheTouchedAt && this.promptCacheTouchedAt > startedAt) return;
+    this.promptCacheTouchedAt = startedAt;
+    this.promptCacheRefreshedAt = startedAt;
+  }
+
   private async ensureQuery(launchMode: PermissionMode = this.currentMode): Promise<Query> {
     if (this.query && !this.queryRestartNeeded) {
       return this.query;
@@ -3282,6 +3336,10 @@ class ClaudeAgentSession implements AgentSession {
     this.input = input;
     // A fresh Claude process has no turn of its own in flight.
     this.mainTurnInFlight = false;
+    // Nor a request of its own: it rebuilds its system prompt, so the previous process's cache
+    // entry is not necessarily the one its side questions would read.
+    this.promptCacheTouchedAt = null;
+    this.promptCacheRefreshedAt = null;
     this.query = claudeQuery(
       { prompt: input.iterable, options },
       {
@@ -4674,6 +4732,7 @@ class ClaudeAgentSession implements AgentSession {
     events: AgentStreamEvent[],
     options: { suppressAssistantText?: boolean; suppressReasoning?: boolean } | undefined,
   ): void {
+    this.observePromptCacheRequest(message.event);
     const usageUpdatedEvent = this.contextUsage.buildStreamUsageEvent(message.event);
     if (usageUpdatedEvent) {
       events.push(usageUpdatedEvent);

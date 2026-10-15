@@ -2594,6 +2594,12 @@ export const es: TranslationResources = {
       },
       agents: {
         unavailable: "Connect to this host to manage agents",
+        keepPromptCacheWarm: {
+          title: "Mantener activa la caché de prompts",
+          hint: "Actualiza la caché de prompts de una hora de los agentes Claude inactivos durante hasta 4 horas, para que tu próximo mensaje la reutilice en lugar de pagar por volver a almacenar la conversación en caché. Cada actualización cuesta una lectura de caché.",
+          accessibilityLabel: "Mantener activa la caché de prompts",
+          updating: "Actualizando la configuración de la caché de prompts…",
+        },
       },
       workspaces: {
         unavailable: "Connect to this host to manage workspaces",
